@@ -9,8 +9,16 @@ chat:
     input: "incoming-messages"
 
 spring:
+  jpa:
+    hibernate:
+      ddl-auto: update # WILL BE REMOVED WHEN LIQUIBASE IS RUNNING
+    show-sql: true
   application:
     name: "trending-topic-api"
+  datasource:
+    url: jdbc:postgresql://localhost:5432/trending-topics-api
+    username: postgres
+    password: postgres
   mvc:
     async:
       request-timeout: -1

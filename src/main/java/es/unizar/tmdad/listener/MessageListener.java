@@ -21,17 +21,13 @@ public class MessageListener {
         this.objectMapper = objectMapper;
     }
 
-    private void logs(MessageIn in){
-        log.info("Processing msg {}.", in);
-    }
-
     public void apply(String input) throws JsonProcessingException {
-        MessageIn msg = objectMapper.readValue(input, MessageIn.class);
+        MessageListIn msg = objectMapper.readValue(input, MessageListIn.class);
         this.apply(msg);
     }
 
-    public void apply(MessageIn messageInFlux) {
-        this.logs(messageInFlux);
+    public void apply(MessageListIn messageInFlux) {
+        log.info("Processing msg {}.", messageInFlux);
         try {
             messageService.processMessage(messageInFlux);
         } catch (IOException e) {
