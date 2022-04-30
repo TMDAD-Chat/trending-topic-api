@@ -1,77 +1,54 @@
 package es.unizar.tmdad.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import es.unizar.tmdad.adt.MessageIn;
+import es.unizar.tmdad.adt.MessageListIn;
+import es.unizar.tmdad.adt.MessageType;
+import es.unizar.tmdad.service.BagOfWordsService;
 import es.unizar.tmdad.service.MessageService;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.io.IOException;
-import java.util.*;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Service
 @Slf4j
 public class MessageServiceImpl implements MessageService {
 
-    private final Map<String, List<SseEmitter>> sseEmmiterList = new HashMap<>();
-    private final ObjectMapper objectMapper;
+    private final BagOfWordsService bagOfWordsService;
 
-    public MessageServiceImpl(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public MessageServiceImpl(BagOfWordsService bagOfWordsService) {
+        this.bagOfWordsService = bagOfWordsService;
     }
 
     @Override
-    public void addSseEmmiter(String topic, SseEmitter emitter) {
-        List<SseEmitter> emmitersForTopic = this.sseEmmiterList.get(topic);
-        if(Objects.isNull(emmitersForTopic)){
-            emmitersForTopic = new ArrayList<>();
-        }
-        emmitersForTopic.add(emitter);
-        this.sseEmmiterList.put(topic, emmitersForTopic);
-    }
-
-    @Override
-    public void removeSseEmmiter(String topic, SseEmitter emitter) {
-        List<SseEmitter> emmitersForTopic = this.sseEmmiterList.get(topic);
-        if(!Objects.isNull(emmitersForTopic)){
-            emmitersForTopic.remove(emitter);
-        }
-        this.sseEmmiterList.put(topic, emmitersForTopic);
-    }
-
-    @Override
-    public void processMessage(MessageIn msg) throws IOException {
-        //TODO UPDATE THIS METHOD TO FULFILL USER STORY 6
-        String topic = null;
-        switch (msg.getRecipientType()){
-            case ROOM:
-                //NOT IMPLEMENTED
-                break;
-            case USER:
-                topic = "user." + msg.getRecipient();
-                break;
-        }
-
-        if(Objects.nonNull(topic)){
-            List<SseEmitter> emmitersForTopic = this.sseEmmiterList.get(topic);
-            String msgAsString = objectMapper.writeValueAsString(msg);
-            if(!Objects.isNull(emmitersForTopic)){
-                List<SseEmitter> deadEmitters = new ArrayList<>();
-                emmitersForTopic.forEach(emitter -> {
-                    try {
-                        emitter.send(msgAsString);
-                    } catch (IOException e) {
-                        deadEmitters.add(emitter);
-                    }
-                });
-                if(!deadEmitters.isEmpty()){
-                    log.info("Could not send message to {} emmiter/s. Removing them from list...", deadEmitters.size());
-                    emmitersForTopic.removeAll(deadEmitters);
-                    this.sseEmmiterList.put(topic, emmitersForTopic);
-                }
+    public void processMessage(MessageListIn msg) {
+        msg.getMessages().forEach(message -> {
+            if(Objects.equals(MessageType.FILE, message.getMessageType())){
+                log.debug("Ignoring message as it is of type FILE.");
+            }else {
+                var words = List.of(message.getContent().split(" "));
+                this.bagOfWordsService.addWordsToBag(words, parseDate(message.getCreationTimestamp()));
             }
-        }
+        });
+    }
 
+    @SneakyThrows
+    private Date parseDate(String s) {
+        if(Objects.isNull(s)){
+            return null;
+        }
+        TemporalAccessor ta = DateTimeFormatter.ISO_DATE_TIME.parse(s);
+        Instant i = Instant.from(ta);
+        return Date.from(i);
     }
 }

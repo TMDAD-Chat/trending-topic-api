@@ -41,8 +41,8 @@ dependencies {
 	testImplementation 'org.springframework.amqp:spring-rabbit-test'
 
 	//REMOVE WHEN DB IS CONNECTED
-	runtimeOnly 'com.h2database:h2'
-	//runtimeOnly 'org.postgresql:postgresql'
+	//runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'org.postgresql:postgresql'
 	//implementation 'org.liquibase:liquibase-core'
 }
 
