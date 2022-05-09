@@ -4,6 +4,17 @@ management:
       exposure:
         include: health,prometheus
 
+server:
+  port: 8443
+  http2:
+    enabled: true
+  ssl:
+    key-store: /opt/trending-topic-api.p12
+    key-store-password: trending-topic-api
+    key-store-type: pkcs12
+    key-alias: trending-topic-api
+    key-password: trending-topic-api
+
 chat:
   exchanges:
     input: "incoming-messages"
